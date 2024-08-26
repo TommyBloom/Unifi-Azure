@@ -1,0 +1,142 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "containerGroupName": {
+        "type": "string",
+        "defaultValue": "unifi-network-application",
+        "metadata": {
+          "description": "Name for the container group"
+        }
+      },
+      "mongoHost": {
+        "type": "string",
+        "metadata": {
+          "description": "MongoDB host address"
+        }
+      },
+      "mongoUser": {
+        "type": "string",
+        "defaultValue": "unifi",
+        "metadata": {
+          "description": "MongoDB username"
+        }
+      },
+      "mongoPassword": {
+        "type": "securestring",
+        "metadata": {
+          "description": "MongoDB password"
+        }
+      },
+      "mongoDbName": {
+        "type": "string",
+        "defaultValue": "unifi",
+        "metadata": {
+          "description": "MongoDB database name"
+        }
+      },
+      "storageAccountName": {
+        "type": "string",
+        "metadata": {
+          "description": "Storage account name for persistent storage"
+        }
+      },
+      "fileShareName": {
+        "type": "string",
+        "defaultValue": "unifi-config",
+        "metadata": {
+          "description": "File share name for persistent storage"
+        }
+      }
+    },
+    "variables": {
+      "image": "lscr.io/linuxserver/unifi-network-application:arm64v8-latest",
+      "cpuCores": "2",
+      "memoryInGB": "4"
+    },
+    "resources": [
+      {
+        "type": "Microsoft.ContainerInstance/containerGroups",
+        "apiVersion": "2021-09-01",
+        "name": "[parameters('containerGroupName')]",
+        "location": "[resourceGroup().location]",
+        "properties": {
+          "containers": [
+            {
+              "name": "unifi-network-application",
+              "properties": {
+                "image": "[variables('image')]",
+                "ports": [
+                  {"port": 8443},
+                  {"port": 3478},
+                  {"port": 10001},
+                  {"port": 8080},
+                  {"port": 1900},
+                  {"port": 8843},
+                  {"port": 8880},
+                  {"port": 6789},
+                  {"port": 5514}
+                ],
+                "environmentVariables": [
+                  {"name": "PUID", "value": "1000"},
+                  {"name": "PGID", "value": "1000"},
+                  {"name": "TZ", "value": "Etc/UTC"},
+                  {"name": "MONGO_USER", "value": "[parameters('mongoUser')]"},
+                  {"name": "MONGO_PASS", "secureValue": "[parameters('mongoPassword')]"},
+                  {"name": "MONGO_HOST", "value": "[parameters('mongoHost')]"},
+                  {"name": "MONGO_PORT", "value": "27017"},
+                  {"name": "MONGO_DBNAME", "value": "[parameters('mongoDbName')]"},
+                  {"name": "MONGO_AUTHSOURCE", "value": "admin"}
+                ],
+                "resources": {
+                  "requests": {
+                    "cpu": "[variables('cpuCores')]",
+                    "memoryInGB": "[variables('memoryInGB')]"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "unifi-config",
+                    "mountPath": "/config"
+                  }
+                ]
+              }
+            }
+          ],
+          "osType": "Linux",
+          "restartPolicy": "Always",
+          "ipAddress": {
+            "type": "Public",
+            "ports": [
+              {"port": 8443},
+              {"port": 3478},
+              {"port": 10001},
+              {"port": 8080},
+              {"port": 1900},
+              {"port": 8843},
+              {"port": 8880},
+              {"port": 6789},
+              {"port": 5514}
+            ],
+            "dnsNameLabel": "[parameters('containerGroupName')]"
+          },
+          "volumes": [
+            {
+              "name": "unifi-config",
+              "azureFile": {
+                "shareName": "[parameters('fileShareName')]",
+                "storageAccountName": "[parameters('storageAccountName')]",
+                "storageAccountKey": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2021-04-01').keys[0].value]"
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "outputs": {
+      "containerIPv4Address": {
+        "type": "string",
+        "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups', parameters('containerGroupName'))).ipAddress.ip]"
+      }
+    }
+  }

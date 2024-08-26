@@ -1,0 +1,27 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "containerGroupName": {
+            "value": "unifi-network-application"
+        },
+        "mongoHost": {
+            "value": "YOUR_MONGO_HOST"
+        },
+        "mongoUser": {
+            "value": "unifi"
+        },
+        "mongoPassword": {
+            "value": null
+        },
+        "mongoDbName": {
+            "value": "unifi"
+        },
+        "storageAccountName": {
+            "value": null
+        },
+        "fileShareName": {
+            "value": "unifi-config"
+        }
+    }
+}
